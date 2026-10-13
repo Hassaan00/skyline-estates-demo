@@ -23,11 +23,13 @@ export function dayList(tz: string, closedDow: string[] = [], n = 28) {
   const now = new Date(); const out: string[] = [];
   for (let i = 0; i < n; i++) {
     const d = new Date(now.getTime() + i * 864e5);
-    const ymd = d.toLocaleDateString("en-CA", { timeZone: tz }); const dow = d.toLocaleDateString("en-US", { timeZone: tz, weekday: "short" });
-    out.push(`${ymd} ${dow}${closedDow.includes(dow) ? " closed" : ""}${i === 0 ? " (today)" : i === 1 ? " (tomorrow)" : ""}`);
+    const ymd = d.toLocaleDateString("en-CA", { timeZone: tz }); const dow = d.toLocaleDateString("en-US", { timeZone: tz, weekday: "long" });
+    const tag = i === 0 ? "today" : i === 1 ? "tomorrow" : i < 7 ? "this week" : "next week";
+    out.push(`${dow} ${ymd} (${tag}${closedDow.includes(dow.slice(0, 3)) ? ", CLOSED" : ""})`);
   }
-  return out.join(", ");
+  return out.join("; ") + `. "Next <weekday>" means the first matching weekday labelled next week. Always double-check the weekday of the date you use.`;
 }
+export const weekday = (ymd: string) => new Date(ymd + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" });
 export function normTime(t: string, TIMES: string[]) {
   const s = String(t || "").trim().toUpperCase().replace(/\s+/g, " ").replace(/\./g, "");
   const exact = TIMES.find((x) => x.toUpperCase() === s); if (exact) return exact;

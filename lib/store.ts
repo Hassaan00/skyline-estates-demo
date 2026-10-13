@@ -1,6 +1,6 @@
 import { putNew, readAll, keys, Exists, storageName } from "./kv";
 import { properties, getProperty, VIEW_TIMES, TZ } from "./data";
-import { normTime, ref } from "./groq";
+import { normTime, ref, weekday } from "./groq";
 export { storageName };
 export type Viewing = { ref: string; propertyId: string; propertyTitle: string; date: string; time: string; name: string; email?: string; phone?: string; notes?: string; source: "chat" | "voice" | "form"; sessionId?: string; createdAt: string };
 export type Lead = { id: string; name?: string; email?: string; phone?: string; purpose?: string; budgetAED?: number; areas?: string; beds?: number; timeline?: string; financing?: string; notes?: string; interested?: string[]; viewings?: string[]; score: number; source: string; createdAt: string; updatedAt: string };
@@ -15,7 +15,7 @@ export async function availability(propertyId: string, date: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "date must be YYYY-MM-DD" };
   if (date < today()) return { propertyId: p.id, date, free: [], note: "date is in the past" };
   const taken = new Set((await keys(V + date + "/")).map((k) => k.split("/").pop()!.replace(/\.json$/, "")));
-  return { propertyId: p.id, property: p.title, date, free: VIEW_TIMES.filter((t) => !taken.has(slot(p.id, date, t))) };
+  return { propertyId: p.id, property: p.title, date, weekday: weekday(date), free: VIEW_TIMES.filter((t) => !taken.has(slot(p.id, date, t))) };
 }
 export async function createViewing(i: Partial<Viewing>): Promise<Viewing> {
   const p = getProperty(i.propertyId || ""); const date = String(i.date || "").slice(0, 10); const time = normTime(i.time || "", VIEW_TIMES);

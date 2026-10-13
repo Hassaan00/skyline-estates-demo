@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { brand, properties, areas, agents, VIEW_TIMES, TZ, getProperty, fmtAED, fmtUSD, AED_PER_USD } from "@/lib/data";
 import { fallback, detectLang, busy } from "@/lib/fallback";
-import { groq, Busy, CONFIRM_RE, dayList } from "@/lib/groq";
+import { groq, Busy, CONFIRM_RE, dayList, weekday } from "@/lib/groq";
 import { availability, createViewing, SlotTaken, upsertLead, type Viewing } from "@/lib/store";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
   const last = [...messages].reverse().find((m) => m.role === "user")?.content || "";
   const key = process.env.GROQ_API_KEY;
   let booking: Viewing | undefined; let cards: string[] = [];
-  const card = () => booking && { ref: booking.ref, title: "Viewing confirmed", href: `/properties/${booking.propertyId}`, lines: [["Property", booking.propertyTitle], ["When", `${booking.date} · ${booking.time}`], ["Client", booking.name], ["Agent", agents.find((x) => x.id === getProperty(booking!.propertyId)?.agent)?.name || "Skyline"]] };
+  const card = () => booking && { ref: booking.ref, title: "Viewing confirmed", href: `/properties/${booking.propertyId}`, lines: [["Property", booking.propertyTitle], ["When", `${weekday(booking.date).slice(0, 3)} ${booking.date} · ${booking.time}`], ["Client", booking.name], ["Agent", agents.find((x) => x.id === getProperty(booking!.propertyId)?.agent)?.name || "Skyline"]] };
   const items = () => [...new Set(cards)].slice(0, 3).map((id) => { const p = getProperty(id)!; return { id, title: p.title, sub: `${p.area} · ${p.beds} BR · ${p.sqft.toLocaleString()} sqft`, price: fmtAED(p.price) + (p.purpose === "rent" ? "/yr" : ""), alt: fmtUSD(p.price), href: `/properties/${id}`, art: p.art }; });
   const out = (reply: string, source: string) => NextResponse.json({ reply, source, booking: card(), items: items() });
   if (key) {
@@ -67,7 +67,7 @@ export async function POST(req: Request) {
                 else if (booking) result = { ok: true, ref: booking.ref, note: "already booked this turn" };
                 else { booking = await createViewing({ ...a, source: channel, sessionId }); cards = [];
                   await upsertLead(sessionId, { name: a.name, phone: a.phone, email: a.email, viewings: [booking.ref], interested: [booking.propertyId] }, channel).catch(() => {});
-                  result = { ok: true, ref: booking.ref, viewing: booking }; }
+                  result = { ok: true, ref: booking.ref, weekday: weekday(booking.date), viewing: booking }; }
               } else result = { error: "unknown tool" };
             } catch (e: any) { result = e instanceof SlotTaken ? { ok: false, error: "slot_taken", message: "That slot was just booked by someone else. Check availability again and offer alternatives." } : { ok: false, error: e?.message || "failed" }; }
             convo.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(result) });
