@@ -59,7 +59,7 @@ export async function POST(req: Request) {
             try {
               const n = tc.function.name;
               if (n === "search_properties") { const r = search(a); cards = r.map((p) => p.id); result = { count: r.length, results: r.map((p) => ({ id: p.id, title: p.title, area: p.area, price: fmtAED(p.price) + (p.purpose === "rent" ? "/yr" : ""), usd: fmtUSD(p.price), beds: p.beds, status: p.status, view: p.view })), note: r.length ? undefined : "No exact match. Suggest the closest from the listings." };
-                if (sessionId && r.length) upsertLead(sessionId, { interested: r.map((p) => p.id) }, channel).catch(() => {}); }
+                if (sessionId && r.length) await upsertLead(sessionId, { interested: r.map((p) => p.id) }, channel).catch(() => {}); }
               else if (n === "check_availability") result = await availability(a.propertyId, a.date);
               else if (n === "save_lead") { const l = await upsertLead(sessionId, a, channel); result = { ok: true, score: l.score }; }
               else if (n === "create_viewing") {
@@ -79,7 +79,7 @@ export async function POST(req: Request) {
         if (reply && !booking && !corrected && /\b(confirmed|booked|is set|reserved|all set)\b|تم الحجز|تأكيد الحجز|подтвержд|réservée|confirmée/i.test(reply) && !/\?\s*$/.test(reply)) {
           corrected = true; convo.push({ role: "assistant", content: reply }, { role: "system", content: "Correction: nothing is booked yet (create_viewing has not succeeded). Do not claim a booking. Continue: check availability, collect full name and phone/email, summarise and ask the user to confirm." }); continue;
         }
-        if (reply && !booking && corrected && /\b(confirmed|booked|reserved|all set)\b/i.test(reply) && !/\?\s*$/.test(reply)) return out("Almost there. Please confirm your full name, phone or email, and the day and time, and I'll lock it in.", "groq");
+        if (reply && !booking && corrected && /\b(confirmed|booked|reserved|all set)\b/i.test(reply) && !/\?\s*$/.test(reply)) return out("Perfect, I have everything I need. Shall I go ahead and confirm this viewing for you?", "groq");
         if (reply) return out(reply, "groq");
         break;
       }
