@@ -1,19 +1,25 @@
 export class Busy extends Error {}
 export const MODEL = "openai/gpt-oss-20b";
-export async function groq(key: string, messages: any[], tools: any[], retried = 0, deadline = Date.now() + 45000): Promise<any> {
+export const BACKUP_MODEL = "openai/gpt-oss-120b";
+export async function groq(key: string, messages: any[], tools: any[], retried = 0, deadline = Date.now() + 45000, model = MODEL): Promise<any> {
   const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: MODEL, max_tokens: 800, temperature: 0.3, reasoning_effort: "low", messages, tools, tool_choice: "auto" }), signal: AbortSignal.timeout(20000),
+    body: JSON.stringify({ model, max_tokens: 800, temperature: 0.3, reasoning_effort: "low", messages, tools, tool_choice: "auto" }), signal: AbortSignal.timeout(20000),
   });
+  if (r.status === 429) {
+    const t = await r.clone().text().catch(() => "");
+    // daily quota exhausted: switch to the backup model (separate quota), else use rule-based fallback
+    if (/per day|TPD|RPD/i.test(t)) { if (model !== BACKUP_MODEL) return groq(key, messages, tools, 0, deadline, BACKUP_MODEL); throw new Error("groq daily quota reached"); }
+  }
   if (r.status === 429 || r.status >= 500) {
     const ra = Math.min(15, parseFloat(r.headers.get("retry-after") || "3") || 3);
-    if (retried < 2 && Date.now() + ra * 1000 < deadline) { await new Promise((ok) => setTimeout(ok, ra * 1000)); return groq(key, messages, tools, retried + 1, deadline); }
+    if (retried < 2 && Date.now() + ra * 1000 < deadline) { await new Promise((ok) => setTimeout(ok, ra * 1000)); return groq(key, messages, tools, retried + 1, deadline, model); }
     throw new Busy();
   }
   if (!r.ok) {
     const t = await r.text();
     // tool-call generation hiccup: retry once
-    if (r.status === 400 && /tool|function|generat/i.test(t) && retried < 2) return groq(key, messages, tools, retried + 1, deadline);
+    if (r.status === 400 && /tool|function|generat/i.test(t) && retried < 2) return groq(key, messages, tools, retried + 1, deadline, model);
     throw new Error("groq " + r.status + " " + t.slice(0, 200));
   }
   return (await r.json()).choices?.[0]?.message;
