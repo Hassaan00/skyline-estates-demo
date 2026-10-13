@@ -29,7 +29,7 @@ function search(a: any) {
   const area = String(a.area || "").toLowerCase();
   let r = properties.filter((p) => (!a.purpose || p.purpose === a.purpose) && (!a.type || p.type === a.type) && (!a.minBeds || p.beds >= a.minBeds)
     && (!a.maxPriceAED || p.price <= a.maxPriceAED * 1.1) && (!a.minPriceAED || p.price >= a.minPriceAED * 0.9) && (a.offPlan === undefined || (p.status === "Off-plan") === a.offPlan)
-    && (!area || p.area.toLowerCase().includes(area) || p.community.toLowerCase().includes(area) || area.includes(p.area.toLowerCase().split(",")[0])));
+    && (!area || area.split(/[\s,/]+/).filter((w) => w.length > 2).some((w) => (p.area + " " + p.community + " " + p.title + " " + p.view + " " + p.features.join(" ") + " " + p.blurb).toLowerCase().includes(w.replace(/s$/, "")))));
   return r.slice(0, 4);
 }
 
