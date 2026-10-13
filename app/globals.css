@@ -1,0 +1,18 @@
+@tailwind base; @tailwind components; @tailwind utilities;
+:root { color-scheme: dark; }
+html { scroll-behavior: smooth; }
+html, body { overflow-x: clip; }
+body { @apply bg-ink-950 text-ink-50 antialiased; }
+.container-x { @apply mx-auto w-full max-w-7xl px-5 sm:px-8; }
+.glass { @apply border border-white/10 bg-white/[.04] backdrop-blur-xl; }
+.btn-gold { @apply inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-b from-accent-300 to-accent-500 px-6 py-3 text-sm font-semibold text-ink-950 shadow-[0_10px_40px_-10px_rgba(212,168,83,.6)] transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-300; }
+.btn-line { @apply inline-flex items-center justify-center gap-2 rounded-full border border-white/20 px-6 py-3 text-sm font-medium text-white transition hover:border-accent-300 hover:text-accent-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-300; }
+.eyebrow { @apply inline-flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[.32em] text-accent-300; }
+.eyebrow::before { content: ""; @apply h-px w-8 bg-accent-400/70; }
+.h2 { @apply font-display text-4xl font-light leading-[1.05] tracking-tight text-white sm:text-6xl; }
+.gold-text { @apply bg-gradient-to-r from-accent-200 via-accent-400 to-accent-200 bg-[length:200%_auto] bg-clip-text text-transparent animate-shimmer; }
+.field { @apply w-full rounded-xl border border-white/10 bg-white/[.05] px-3.5 py-2.5 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-accent-300; }
+.field option { @apply bg-ink-900; }
+.noise { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.05'/%3E%3C/svg%3E"); }
+::selection { @apply bg-accent-400 text-ink-950; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
