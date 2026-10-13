@@ -1,6 +1,6 @@
 import { putNew, readAll, keys, Exists, storageName } from "./kv";
 import { properties, getProperty, VIEW_TIMES, TZ } from "./data";
-import { normTime, ref, weekday } from "./groq";
+import { normTime, ref, weekday, resolveDate } from "./groq";
 export { storageName };
 export type Viewing = { ref: string; propertyId: string; propertyTitle: string; date: string; time: string; name: string; email?: string; phone?: string; notes?: string; source: "chat" | "voice" | "form"; sessionId?: string; createdAt: string };
 export type Lead = { id: string; name?: string; email?: string; phone?: string; purpose?: string; budgetAED?: number; areas?: string; beds?: number; timeline?: string; financing?: string; notes?: string; interested?: string[]; viewings?: string[]; score: number; source: string; createdAt: string; updatedAt: string };
@@ -10,7 +10,7 @@ export const today = () => new Date().toLocaleDateString("en-CA", { timeZone: TZ
 export class SlotTaken extends Error {}
 
 export async function availability(propertyId: string, date: string) {
-  const p = getProperty(propertyId); date = String(date || "").slice(0, 10);
+  const p = getProperty(propertyId); date = resolveDate(date, TZ);
   if (!p) return { error: "unknown property id", validIds: properties.map((x) => x.id) };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "date must be YYYY-MM-DD" };
   if (date < today()) return { propertyId: p.id, date, free: [], note: "date is in the past" };
@@ -18,7 +18,7 @@ export async function availability(propertyId: string, date: string) {
   return { propertyId: p.id, property: p.title, date, weekday: weekday(date), free: VIEW_TIMES.filter((t) => !taken.has(slot(p.id, date, t))) };
 }
 export async function createViewing(i: Partial<Viewing>): Promise<Viewing> {
-  const p = getProperty(i.propertyId || ""); const date = String(i.date || "").slice(0, 10); const time = normTime(i.time || "", VIEW_TIMES);
+  const p = getProperty(i.propertyId || ""); const date = resolveDate(i.date || "", TZ); const time = normTime(i.time || "", VIEW_TIMES);
   if (!p || !time || !/^\d{4}-\d{2}-\d{2}$/.test(date) || date < today()) throw new Error("Invalid property, date or time. Valid times: " + VIEW_TIMES.join(", "));
   if (!i.name || !(i.email || i.phone)) throw new Error("Name and phone or email are required");
   const v: Viewing = { ref: ref("SKY"), propertyId: p.id, propertyTitle: p.title, date, time, name: String(i.name).slice(0, 80), email: i.email?.slice(0, 120), phone: i.phone?.slice(0, 40), notes: i.notes?.slice(0, 400), source: i.source || "form", sessionId: i.sessionId, createdAt: new Date().toISOString() };

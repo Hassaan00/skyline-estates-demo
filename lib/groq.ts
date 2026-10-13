@@ -40,3 +40,19 @@ export function normTime(t: string, TIMES: string[]) {
   return TIMES.find((x) => x === `${h}:${min} ${ap}`) || null;
 }
 export const ref = (p: string) => p + "-" + Math.random().toString(36).slice(2, 7).toUpperCase();
+
+const DOWS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+/** Accepts YYYY-MM-DD or natural phrases ("tomorrow", "next wednesday", "this sat", "Oct 21") and returns YYYY-MM-DD in tz. */
+export function resolveDate(input: string, tz: string): string {
+  const s = String(input || "").trim().toLowerCase();
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  const todayYmd = new Date().toLocaleDateString("en-CA", { timeZone: tz });
+  const base = new Date(todayYmd + "T12:00:00Z"); const add = (n: number) => new Date(base.getTime() + n * 864e5).toISOString().slice(0, 10);
+  if (/\btoday\b/.test(s)) return todayYmd;
+  if (/day after tomorrow/.test(s)) return add(2);
+  if (/\btomorrow\b/.test(s)) return add(1);
+  const di = DOWS.findIndex((d) => new RegExp(`\\b${d.slice(0, 3)}`).test(s));
+  if (di >= 0) { let n = (di - base.getUTCDay() + 7) % 7 || 7; if (/\bnext\b/.test(s) && n <= 3) n += 7; return add(n); }
+  const t = Date.parse(s + " " + todayYmd.slice(0, 4) + " 12:00 UTC"); if (!isNaN(t)) { let d = new Date(t).toISOString().slice(0, 10); if (d < todayYmd) d = (+d.slice(0, 4) + 1) + d.slice(4); return d; }
+  return s.slice(0, 10);
+}
